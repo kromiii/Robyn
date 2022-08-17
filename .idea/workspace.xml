@@ -8,9 +8,9 @@
       <change beforePath="$PROJECT_DIR$/.idea/Robyn.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Robyn.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/R/R/inputs.R" beforeDir="false" afterPath="$PROJECT_DIR$/R/R/inputs.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/R/R/model.R" beforeDir="false" afterPath="$PROJECT_DIR$/R/R/model.R" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/R/R/transformation.R" beforeDir="false" afterPath="$PROJECT_DIR$/R/R/transformation.R" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/demo/demo.R" beforeDir="false" afterPath="$PROJECT_DIR$/demo/demo.R" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/robyn_install_notes.txt" beforeDir="false" afterPath="$PROJECT_DIR$/util/robyn_install_notes.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/util/robyn_v02.py" beforeDir="false" afterPath="$PROJECT_DIR$/util/robyn_v02.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -37,30 +37,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/sinandjevdet/opt/miniconda3/envs/Robyn/R/R&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.stylelint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.stylelint&quot;: &quot;&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.fileTypes&quot;,
-    &quot;settings.editor.splitter.proportion&quot;: &quot;0.27488583&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "last_opened_file_path": "/Users/sinandjevdet/opt/miniconda3/envs/Robyn/R/R",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.stylelint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.stylelint": "",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "yarn",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "settings.editor.splitter.proportion": "0.27488583"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/R/R" />
     </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/util/py_robyn_plots" />
+    </key>
   </component>
-  <component name="RunManager" selected="Python.rpy2">
+  <component name="RunManager" selected="Python.env_r41_p37_new">
     <configuration name="env_r41_p37_new" type="PythonConfigurationType" factoryName="Python">
       <module name="Robyn" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -68,7 +71,7 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="$PROJECT_DIR$/../env_r41_new_p37/bin/python" />
+      <option name="SDK_HOME" value="$PROJECT_DIR$/../env_rpy37/bin/python" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/util" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -129,6 +132,7 @@
       <workItem from="1659092876684" duration="31000" />
       <workItem from="1659093377601" duration="33000" />
       <workItem from="1659362233151" duration="4822000" />
+      <workItem from="1660553253746" duration="46256000" />
     </task>
     <servers />
   </component>
@@ -151,28 +155,23 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/util/robyn_v02.py</url>
-          <line>172</line>
+          <line>194</line>
           <option name="timeStamp" value="28" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/util/robyn_v02.py</url>
-          <line>161</line>
+          <line>183</line>
           <option name="timeStamp" value="31" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/util/robyn_v02.py</url>
-          <line>369</line>
+          <line>448</line>
           <option name="timeStamp" value="64" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/util/robyn_v02.py</url>
-          <line>367</line>
+          <line>446</line>
           <option name="timeStamp" value="66" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/util/robyn_v02.py</url>
-          <line>359</line>
-          <option name="timeStamp" value="67" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -180,6 +179,6 @@
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Robyn$rpy2.coverage" NAME="rpy2 Coverage Results" MODIFIED="1659371845562" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/util" />
     <SUITE FILE_PATH="coverage/Robyn$env_r41_p37.coverage" NAME="env_r41_p37 Coverage Results" MODIFIED="1658505426486" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/util" />
-    <SUITE FILE_PATH="coverage/Robyn$env_r41_p37_new.coverage" NAME="env_r41_p37_new Coverage Results" MODIFIED="1658852936372" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/util" />
+    <SUITE FILE_PATH="coverage/Robyn$env_r41_p37_new.coverage" NAME="env_r41_p37_new Coverage Results" MODIFIED="1660741433191" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/util" />
   </component>
 </project>

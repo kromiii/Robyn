@@ -66,6 +66,7 @@ robyn_run <- function(InputCollect,
                       lambda_control = NULL,
                       ...) {
   t0 <- Sys.time()
+  message(paste("In robyn_run", collapse = ", "))
 
   #####################################
   #### Set local environment
@@ -76,6 +77,7 @@ robyn_run <- function(InputCollect,
 
   # Check and warn on legacy inputs (using InputCollect params as robyn_run() inputs)
   InputCollect <- check_legacy_input(InputCollect, cores, iterations, trials, intercept_sign, nevergrad_algo)
+  message(paste("check_legacy_input complete", collapse = ", "))
   # Overwrite values imported from InputCollect
   legacyValues <- InputCollect[LEGACY_PARAMS]
   legacyValues <- legacyValues[!sapply(legacyValues, is.null)]
@@ -87,14 +89,18 @@ robyn_run <- function(InputCollect,
   hyps_fixed <- !is.null(dt_hyper_fixed)
   if (hyps_fixed) trials <- iterations <- 1
   check_run_inputs(cores, iterations, trials, intercept_sign, nevergrad_algo)
+  message(paste("check_run_inputs complete", collapse = ", "))
   check_iteration(InputCollect$calibration_input, iterations, trials, hyps_fixed, refresh)
+  message(paste("check_iteration complete", collapse = ", "))
   init_msgs_run(InputCollect, refresh, lambda_control, quiet)
+  message(paste("init_msgs_run complete", collapse = ", "))
 
   #####################################
   #### Prepare hyper-parameters
 
   hyper_collect <- hyper_collector(InputCollect, InputCollect$hyperparameters, add_penalty_factor, dt_hyper_fixed, cores)
   InputCollect$hyper_updated <- hyper_collect$hyper_list_all
+  message(paste("hyper-parameters prepared", collapse = ", "))
 
   #####################################
   #### Run robyn_mmm on set_trials
@@ -105,6 +111,7 @@ robyn_run <- function(InputCollect,
     dt_hyper_fixed, add_penalty_factor,
     refresh, seed, quiet
   )
+  message(paste("robyn_train complete", collapse = ", "))
 
   attr(OutputModels, "hyper_fixed") <- hyper_collect$all_fixed
   attr(OutputModels, "refresh") <- refresh
@@ -215,6 +222,7 @@ robyn_train <- function(InputCollect, hyper_collect,
                         add_penalty_factor = FALSE,
                         refresh = FALSE, seed = 123,
                         quiet = FALSE) {
+  message(paste("in robyn_train: ", collapse = ", "))
   hyper_fixed <- hyper_collect$all_fixed
 
   if (hyper_fixed) {
@@ -230,6 +238,7 @@ robyn_train <- function(InputCollect, hyper_collect,
       seed = seed,
       quiet = quiet
     )
+    message(paste("robyn_mmm complete: ", collapse = ", "))
 
     OutputModels[[1]]$trial <- 1
     OutputModels[[1]]$resultCollect$resultHypParam <- arrange(
@@ -329,10 +338,20 @@ robyn_mmm <- function(InputCollect,
                       refresh = FALSE,
                       seed = 123L,
                       quiet = FALSE) {
+
+  message(paste("in robyn_mmms : ", collapse = ", "))
+  #message(paste("robyn_mmm:  r-reticulate ",paste(reticulate::conda_list() collapse = ", ")))
+  #reticulate::use_python("~/Users/sinandjevdet/opt/miniconda3/envs/env_rpy37/bin/python3.7")
+  #reticulate::use_miniconda(condaenv="r-reticulate")
+  message(paste("robyn_mmm: using miniconda r-reticulate ", collapse = ", "))
+  #message(paste("robyn_mmm: using python version ", paste(reticulate::py_discover_config() collapse = ", ")))
+
   if (reticulate::py_module_available("nevergrad")) {
     ng <- reticulate::import("nevergrad", delay_load = TRUE)
+    message(paste("robyn_mmm: nevergrad imported ", collapse = ", "))
     if (is.integer(seed)) {
       np <- reticulate::import("numpy", delay_load = FALSE)
+       message(paste("robyn_mmm: numpy imported ", collapse = ", "))
       np$random$seed(seed)
     }
   } else {
@@ -344,27 +363,33 @@ robyn_mmm <- function(InputCollect,
 
   if (TRUE) {
     hypParamSamName <- names(hyper_collect$hyper_list_all)
+    message(paste("robyn_mmm: hypParamSamName complete ", collapse = ", "))
     # Optimization hyper-parameters
     hyper_bound_list_updated <- hyper_collect$hyper_bound_list_updated
     hyper_bound_list_updated_name <- names(hyper_bound_list_updated)
     hyper_count <- length(hyper_bound_list_updated_name)
+    message(paste("robyn_mmm: optimized hyper-parameters ", collapse = ", "))
     # Fixed hyper-parameters
     hyper_bound_list_fixed <- hyper_collect$hyper_bound_list_fixed
     hyper_bound_list_fixed_name <- names(hyper_bound_list_fixed)
     hyper_count_fixed <- length(hyper_bound_list_fixed_name)
     dt_hyper_fixed_mod <- hyper_collect$dt_hyper_fixed_mod
     hyper_fixed <- hyper_collect$all_fixed
+    message(paste("robyn_mmm: fixed hyper-parameters ", collapse = ", "))
   }
 
   ################################################
   #### Setup environment
+   message(paste("robyn_mmm: set environment: current env list ", paste(reticulate:: py_config(), collapse = ", ")))
 
   if (is.null(InputCollect$dt_mod)) {
     stop("Run InputCollect$dt_mod <- robyn_engineering() first to get the dt_mod")
   }
 
+  #message(paste("robyn_mmm: set environment: current env list ", paste(reticulate::py_list_packages(), collapse = ", ")))
   ## Get environment for parallel backend
   if (TRUE) {
+    message(paste("robyn_mmm: get environment for parallel backend ", collapse = ", "))
     dt_mod <- InputCollect$dt_mod
     xDecompAggPrev <- InputCollect$xDecompAggPrev
     rollingWindowStartWhich <- InputCollect$rollingWindowStartWhich
@@ -388,13 +413,16 @@ robyn_mmm <- function(InputCollect,
     add_penalty_factor <- add_penalty_factor
     intercept_sign <- intercept_sign
     i <- NULL # For parallel iterations (globalVar)
+    message(paste("robyn_mmm: get environment for parallel backend complete", collapse = ", "))
   }
 
   ################################################
   #### Get spend share
 
   dt_inputTrain <- InputCollect$dt_input[rollingWindowStartWhich:rollingWindowEndWhich, ]
+  message(paste("robyn_mmm: obtained dt_inputTrain ", collapse = ", "))
   temp <- select(dt_inputTrain, all_of(paid_media_spends))
+  message(paste("robyn_mmm: obtained temp ", collapse = ", "))
   dt_spendShare <- data.frame(
     rn = paid_media_spends,
     total_spend = unlist(summarise_all(temp, sum)),
@@ -404,6 +432,7 @@ robyn_mmm <- function(InputCollect,
   ) %>%
     mutate(spend_share = .data$total_spend / sum(.data$total_spend))
   # When not refreshing, dt_spendShareRF = dt_spendShare
+   message(paste("robyn_mmm:obtained dt_spendShare ", collapse = ", "))
   refreshAddedStartWhich <- which(dt_modRollWind$ds == refreshAddedStart)
   temp <- select(dt_inputTrain, all_of(paid_media_spends)) %>%
     slice(refreshAddedStartWhich:rollingWindowLength)
@@ -415,8 +444,11 @@ robyn_mmm <- function(InputCollect,
     }))
   ) %>%
     mutate(spend_share = .data$total_spend / sum(.data$total_spend))
+
   # Join both dataframes into a single one
+  message(paste("robyn_mmm:obtained dt_spendShareRF ", collapse = ", "))
   dt_spendShare <- left_join(dt_spendShare, dt_spendShareRF, "rn", suffix = c("", "_refresh"))
+  message(paste("robyn_mmm:joined dt_spendShare ", collapse = ", "))
 
   ################################################
   #### Get lambda
@@ -428,6 +460,7 @@ robyn_mmm <- function(InputCollect,
   )
   lambda_max <- max(lambdas) * 0.1
   lambda_min <- lambda_max * lambda_min_ratio
+  message(paste("robyn_mmm:lambda obtained ", collapse = ", "))
 
   ################################################
   #### Start Nevergrad loop
@@ -444,6 +477,7 @@ robyn_mmm <- function(InputCollect,
   }
 
   ## Start Nevergrad optimizer
+  message(paste("robyn_mmm:Start Nevergrad optimizer", collapse = ", "))
   if (!hyper_fixed) {
     my_tuple <- tuple(hyper_count)
     instrumentation <- ng$p$Array(shape = my_tuple, lower = 0, upper = 1)
@@ -455,7 +489,8 @@ robyn_mmm <- function(InputCollect,
       optimizer$tell(ng$p$MultiobjectiveReference(), tuple(1, 1, 1))
     }
   }
-
+  message(paste("robyn_mmm:nevergrad optimised ", collapse = ", "))
+  message(paste("robyn_mmm:reticulate packages", paste(reticulate::py_list_packages(), collapse = ", ")))
   ## Prepare loop
   resultCollectNG <- list()
   cnt <- 0
@@ -466,6 +501,8 @@ robyn_mmm <- function(InputCollect,
   } else {
     registerDoSEQ()
   }
+
+  message(paste("robyn_mmm:prepared loop  ", collapse = ", "))
 
   sysTimeDopar <- system.time({
     for (lng in 1:iterNG) { # lng = 1
@@ -505,7 +542,7 @@ robyn_mmm <- function(InputCollect,
       }
 
       ## Parallel start
-
+      message(paste("robyn_mmm:Parallel start  ", collapse = ", "))
       nrmse.collect <- c()
       decomp.rssd.collect <- c()
       best_mape <- Inf

@@ -187,6 +187,8 @@ saturation_hill <- function(x, alpha, gamma, x_marginal = NULL) {
 #' @export
 plot_adstock <- function(plot = TRUE) {
   if (plot) {
+    message(paste("using plot_adstock", collapse = ", "))
+
     ## Plot geometric
     geomCollect <- list()
     thetaVec <- c(0.01, 0.05, 0.1, 0.2, 0.5, 0.6, 0.7, 0.8, 0.9)
@@ -258,6 +260,46 @@ plot_adstock <- function(plot = TRUE) {
       ) +
       theme_lares(pal = 2)
     return(wrap_plots(A = p1, B = p2, design = "ABB"))
+  }
+}
+
+plot_adstock_geom <- function(plot = TRUE) {
+  if (plot) {
+    message(paste("using plot_adstock_geom", collapse = ", "))
+
+    ## Plot geometric
+    geomCollect <- list()
+    thetaVec <- c(0.01, 0.05, 0.1, 0.2, 0.5, 0.6, 0.7, 0.8, 0.9)
+
+    for (v in 1:length(thetaVec)) {
+      thetaVecCum <- 1
+      for (t in 2:100) {
+        thetaVecCum[t] <- thetaVecCum[t - 1] * thetaVec[v]
+      }
+      dt_geom <- data.frame(
+        x = 1:100,
+        decay_accumulated = thetaVecCum,
+        theta = thetaVec[v]
+      )
+      dt_geom$halflife <- which.min(abs(dt_geom$decay_accumulated - 0.5))
+      geomCollect[[v]] <- dt_geom
+    }
+    geomCollect <- bind_rows(geomCollect)
+    geomCollect$theta_halflife <- paste(geomCollect$theta, geomCollect$halflife, sep = "_")
+
+    p1 <- ggplot(geomCollect, aes(x = .data$x, y = .data$decay_accumulated)) +
+      geom_line(aes(color = .data$theta_halflife)) +
+      geom_hline(yintercept = 0.5, linetype = "dashed", color = "gray") +
+      geom_text(aes(x = max(.data$x), y = 0.5, vjust = -0.5, hjust = 1, label = "Halflife"), colour = "gray") +
+      labs(
+        title = "Geometric Adstock\n(Fixed decay rate)",
+        subtitle = "Halflife = time until effect reduces to 50%",
+        x = "Time unit",
+        y = "Media decay accumulated"
+      ) +
+      theme_lares(pal = 2)
+
+    return(geomCollect)
   }
 }
 

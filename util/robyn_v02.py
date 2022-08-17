@@ -6,6 +6,7 @@ from datetime import date
 #LOGGING
 import logging as logger
 import rpy2.rlike.container as rlc
+import signal
 
 
 logger.getLogger("robyn_v02 logger")
@@ -38,6 +39,7 @@ try:
     from rpy2.robjects.conversion import localconverter, py2rpy
     from rpy2.robjects.packages import importr, data
     import rpy2.robjects.packages as rpackages
+    import rpy2.robjects.lib.ggplot2 as ggplot2
 
     global LOCAL
     LOCAL = True
@@ -53,6 +55,8 @@ try:
     utils = importr("utils")
     #utils.chooseCRANmirror(ind=70)
     base = importr('base')
+    graphics = importr('graphics')
+
 
     ##################
     # Import Robyn from R
@@ -60,6 +64,7 @@ try:
     #robyn = importr('Robyn')
     d = {'print.me': 'print_dot_me', 'print_me': 'print_uscore_me'}
 
+    #signal.signal(signal.SIGSEGV, signal.SIG_IGN)
     remotes = importr("remotes")
     remotes.install_local(f"{root}/R",force=True)
     #robyn = importr('Robyn', robject_translations=d,
@@ -114,8 +119,10 @@ try:
 
     class RFuncs:
 
-        def __init__(self):
+        def __init__(self,ro,pandas2ri):
             self.find_pkg_func={'find_pkg':'''findPkgAll <- function(pkg) unlist(lapply(.libPaths(), function(lib) find.package(pkg, lib, quiet=TRUE, verbose=FALSE)))'''}
+            self.ro=ro
+            self.pandas2ri=pandas2ri
 
         def set_custom_r_func(self,func_code:str):
             func=robjects.r(func_code)
@@ -128,9 +135,24 @@ try:
             rtype=self.set_custom_r_func('typeof')
             return rtype
 
+        def get_r_print(self):
+            rprint = ro.globalenv.find("print")
+            return rprint
 
-    rfuncs = RFuncs()
+        def pdf_to_rdf(self,df):
+            with localconverter(self.ro.default_converter + self.pandas2ri.converter):
+                r_df = self.ro.conversion.py2rpy(df)
+            return r_df
+
+        def rdf_to_pdf(self,df):
+            with localconverter(self.ro.default_converter + self.pandas2ri.converter):
+                pdf = self.ro.conversion.rpy2py(df)
+            return pdf
+
+
+    rfuncs = RFuncs(ro,pandas2ri)
     find_pkg_func= rfuncs.set_custom_r_func(rfuncs.find_pkg_func['find_pkg'])
+    rpint=rfuncs.get_r_print()
 
     logger.info(f"Robyn is in path: {find_pkg_func('Robyn')}")
 
@@ -218,32 +240,86 @@ try:
     # 2a-1: First, specify input data & model parameters
 
     # Run ?robyn_inputs to check parameter definition
-    # TODO
 
-
-
-    robyn.check_nas(df=df_simulated)
 
     input_collect= robyn.robyn_inputs(
-
         dt_input=r_df_simulated
         , dt_holidays=r_df_prophet  ##
         , date_var="DATE"
         , dep_var="revenue"
         , dep_var_type="revenue"
-        , prophet_vars=np.array(["trend", "season", "holiday"])
+        , prophet_vars=robjects.StrVector(["trend", "season", "holiday"])
         , prophet_country="DE"
-        , context_vars=np.array(["competitor_sales_B", "events"])
-        , paid_media_vars=np.array(["tv_S", "ooh_S", "print_S", "facebook_I", "search_clicks_P"])
+        , context_vars=robjects.StrVector(["competitor_sales_B", "events"])
+        , paid_media_vars=robjects.StrVector(["tv_S", "ooh_S", "print_S", "facebook_I", "search_clicks_P"])
         # "ooh_S","print_S","facebook_I","search_clicks_P" ##
-        , paid_media_spends=np.array(["tv_S", "ooh_S", "print_S", "facebook_S", "search_S"])
+        , paid_media_spends=robjects.StrVector(["tv_S", "ooh_S", "print_S", "facebook_S", "search_S"])
         # "ooh_S","print_S","facebook_S", "search_S"
-        , organic_vars=np.array(["newsletter"])
-        , factor_vars=np.array(["events"])  #
+        , organic_vars=robjects.StrVector(["newsletter"])
+        , factor_vars=robjects.StrVector(["events"])  #
         , window_start= "2016-11-21"# date(2016,11,21) #"2016-11-21"
         , window_end= "2018-08-20"#date(2018,8,20)   #"2018-08-20"
         , adstock="geometric"
     )
+
+    class RobynPlotting:
+
+        import rpy2.robjects.packages as packages
+        import rpy2.robjects.lib.ggplot2 as ggplot2
+        import rpy2.robjects as ro
+
+        def __init__(self,robyn,rfuncs):
+            self.robyn=robyn
+            self.rfuncs=rfuncs
+
+        def get_geometric_data(self):
+            geom_data=self.robyn.plot_adstock_geom(plot=True)
+            return geom_data
+
+        def geom_pdf(self,geom_data):
+            geom_pdf=self.rfuncs.rdf_to_pdf(geom_data)
+            return geom_pdf
+
+
+        def plot_adstocck(self):
+
+            try:
+                import numpy as np
+                import pandas as pd
+                import rpy2.robjects.packages as packages
+                import rpy2.robjects.lib.ggplot2 as ggplot2
+                import rpy2.robjects as ro
+                R = ro.r
+                file = 'PLOT_ADSTOCK_HALFLIFE_geom_theme_light_scale_color_brewersss'
+                gp = ggplot2.ggplot(geom_rdf)
+                pp = (gp
+                      + ggplot2.aes_string(x='x', y='decay_accumulated', col='halflife')
+                      + ggplot2.geom_line()
+                      # +ggplot2.geom_point()
+                      + ggplot2.geom_hline(yintercept=0.5, linetype="dashed", color="gray")
+                      + ggplot2.labs(title="Geometric Adstock\n(Fixed decay rate)",
+                                     subtitle="Halflife = time until effect reduces to 50%",
+                                     x="Time unit",
+                                     y="Media decay accumulate")
+                      )
+                pp + ggplot2.scale_color_brewer(palette="Dark2")
+
+                pp.plot()
+                R(f"dev.copy(png,'{file}.png')")
+                logger.info(f"SUCCCESS plotting {file}")
+            except:
+                logger.exception("ERROR PLOTTING ADSTOCK")
+
+    ################# PLOTTTING ########################
+    ggplot= importr("ggplot2")
+    ROBYN_PLOTTING=RobynPlotting(robyn,rfuncs)
+    geom_rdf=ROBYN_PLOTTING.get_geometric_data()
+    geom_pdf=ROBYN_PLOTTING.geom_pdf(geom_rdf)
+
+
+    #robyn.plot_adstock(plot=True)
+    #robyn.plot_adstock_geom(plot=True)
+    #robyn.plot_saturation(plot = True)
 
 
 
@@ -264,6 +340,9 @@ try:
     class InnerRobynFunctions:
         def __init__(self, robyn_object):
             self.robyn=robyn_object
+
+        def check_nas(self):
+            self.robyn.check_nas(df=df_simulated)
 
         def check_windows(self):
             self.robyn.check_windows(dt_input=r_df_simulated, date_var="DATE",
