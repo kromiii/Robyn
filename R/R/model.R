@@ -342,13 +342,15 @@ robyn_mmm <- function(InputCollect,
   message(paste("in robyn_mmms : ", collapse = ", "))
   #message(paste("robyn_mmm:  r-reticulate ",paste(reticulate::conda_list() collapse = ", ")))
   #reticulate::use_python("~/Users/sinandjevdet/opt/miniconda3/envs/env_rpy37/bin/python3.7")
-  #reticulate::use_miniconda(condaenv="r-reticulate")
-  message(paste("robyn_mmm: using miniconda r-reticulate ", collapse = ", "))
-  #message(paste("robyn_mmm: using python version ", paste(reticulate::py_discover_config() collapse = ", ")))
 
+  #message(paste("robyn_mmm: using python version ", paste(reticulate::py_discover_config() collapse = ", ")))
+  #reticulate::use_python("/Users/sinandjevdet/opt/miniconda3/envs/r-reticulate/bin/python")
+  #reticulate::use_miniconda(condaenv="r-reticulate",required = TRUE)
+  #message(paste("robyn_mmm: using miniconda r-reticulate ", collapse = ", "))
   if (reticulate::py_module_available("nevergrad")) {
     ng <- reticulate::import("nevergrad", delay_load = TRUE)
     message(paste("robyn_mmm: nevergrad imported ", collapse = ", "))
+
     if (is.integer(seed)) {
       np <- reticulate::import("numpy", delay_load = FALSE)
        message(paste("robyn_mmm: numpy imported ", collapse = ", "))
@@ -482,14 +484,17 @@ robyn_mmm <- function(InputCollect,
     my_tuple <- tuple(hyper_count)
     instrumentation <- ng$p$Array(shape = my_tuple, lower = 0, upper = 1)
     optimizer <- ng$optimizers$registry[optimizer_name](instrumentation, budget = iterTotal, num_workers = cores)
+    message(paste("robyn_mmm: Nevergrad optimizer complete", collapse = ", "))
     # Set multi-objective dimensions for objective functions (errors)
     if (is.null(calibration_input)) {
       optimizer$tell(ng$p$MultiobjectiveReference(), tuple(1, 1))
+      message(paste("robyn_mmm: Nevergrad optimizer complete", collapse = ", "))
     } else {
       optimizer$tell(ng$p$MultiobjectiveReference(), tuple(1, 1, 1))
+      message(paste("robyn_mmm: Nevergrad optimizer complete", collapse = ", "))
     }
   }
-  message(paste("robyn_mmm:nevergrad optimised ", collapse = ", "))
+
   message(paste("robyn_mmm:reticulate packages", paste(reticulate::py_list_packages(), collapse = ", ")))
   ## Prepare loop
   resultCollectNG <- list()
@@ -651,7 +656,10 @@ robyn_mmm <- function(InputCollect,
           #### Fit ridge regression with nevergrad's lambda
           # lambdas <- lambda_seq(x_train, y_train, seq_len = 100, lambda_min_ratio = 0.0001)
           # lambda_max <- max(lambdas)
+          message(paste("robyn_mmm: pre Fit ridge regression with nevergrad's lambda complete", collapse = ", "))
+
           lambda_hp <- unlist(hypParamSamNG$lambda[i])
+          message(paste("robyn_mmm: Fit ridge regression with nevergrad's lambda complete", collapse = ", "))
           if (hyper_fixed == FALSE) {
             lambda_scaled <- lambda_min + (lambda_max - lambda_min) * lambda_hp
           } else {

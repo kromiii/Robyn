@@ -11,7 +11,7 @@ library(reticulate)
 
 #Sys.setenv(RETICULATE_PYTHON = "/usr/bin/python3.8")
 
-Sys.setenv(RETICULATE_PYTHON = "/opt/conda/bin")
+Sys.setenv(RETICULATE_PYTHON = "/Users/sinandjevdet/opt/miniconda3/envs/env_rpy37_n/bin/python")
 
 
 
@@ -23,7 +23,7 @@ print(reticulate::py_config())
 
 
 
-reticulate::conda_create("r-reticulate", "Python 3.9") # Only works with <= Python 3.9 sofar
+reticulate::conda_create("r-reticulate", "Python 3.7") # Only works with <= Python 3.9 sofar
 
 reticulate::use_condaenv("r-reticulate")
 
