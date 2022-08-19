@@ -262,6 +262,8 @@ try:
         , adstock="geometric"
     )
 
+    robyn.hyper_names(adstock=input_collect[32], all_media=input_collect[22])
+
     class RobynPlotting:
 
         import rpy2.robjects.packages as packages

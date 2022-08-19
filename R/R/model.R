@@ -360,6 +360,8 @@ robyn_mmm <- function(InputCollect,
     stop("You must have nevergrad python library installed.")
   }
 
+  message(paste("robyn_mmm: python config : ", paste(reticulate::py_config() ,collapse = ", ")))
+
   ################################################
   #### Collect hyperparameters
 
