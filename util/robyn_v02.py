@@ -445,6 +445,7 @@ try:
                                   , iterations=2000  # recommended for the dummy dataset
                                   , trials=5  # recommended for the dummy dataset
                                   , outputs=False
+                                  ,cores=1
                                   )
         logger.info("SUCCESSFULLY OBTAINED OUTPUTS")
     except:
