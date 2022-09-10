@@ -511,21 +511,26 @@ robyn_mmm <- function(InputCollect,
     }
   }
 
-  message(paste("robyn_mmm:reticulate packages", paste(reticulate::py_list_packages(), collapse = ", ")))
+  #message(paste("robyn_mmm:reticulate packages", paste(reticulate::py_list_packages(), collapse = ", ")))
   ## Prepare loop
   resultCollectNG <- list()
   cnt <- 0
   if (!hyper_fixed & !quiet) pb <- txtProgressBar(max = iterTotal, style = 3)
   # Create cluster before big for-loop to minimize overhead for parallel back-end registering
-  if (check_parallel() & !hyper_fixed) {
-    registerDoParallel(cores)
-  } else {
-    registerDoSEQ()
-  }
+
+
+  #if (check_parallel() & !hyper_fixed) {
+    #registerDoParallel(cores)
+    #message(paste("robyn_mmm: registerDoParallel", collapse = ", "))
+  #} else {
+    #registerDoSEQ()
+     #message(paste("robyn_mmm: registerDoSEQ", collapse = ", "))
+  #}
 
   message(paste("robyn_mmm:prepared loop  ", collapse = ", "))
 
   sysTimeDopar <- system.time({
+    message(paste("robyn_mmm: sysTimeDopar  ", collapse = ", "))
     for (lng in 1:iterNG) { # lng = 1
       nevergrad_hp <- list()
       nevergrad_hp_val <- list()
@@ -567,7 +572,7 @@ robyn_mmm <- function(InputCollect,
       nrmse.collect <- c()
       decomp.rssd.collect <- c()
       best_mape <- Inf
-
+      message(paste("robyn_mmm: pre  doparFx  ", collapse = ", "))
       doparFx <- function(i, ...) {
             t1 <- Sys.time()
             #### Get hyperparameter sample
@@ -660,9 +665,9 @@ robyn_mmm <- function(InputCollect,
           #####################################
           # lambdas <- lambda_seq(x_train, y_train, seq_len = 100, lambda_min_ratio = 0.0001)
           # lambda_max <- max(lambdas)
-          message(paste("robyn_mmm: pre Fit ridge regression with nevergrad's lambda complete", collapse = ", "))
 
-          message(paste("robyn_mmm: Fit ridge regression with nevergrad's lambda complete", collapse = ", "))
+
+
            upper_vec <- if (x_sign[s] == "negative") {
                   rep(0, level.n - 1)
                 } else {
@@ -681,6 +686,7 @@ robyn_mmm <- function(InputCollect,
             #### Fit ridge regression with nevergrad's lambda
             # lambdas <- lambda_seq(x_train, y_train, seq_len = 100, lambda_min_ratio = 0.0001)
             # lambda_max <- max(lambdas)
+            message(paste("robyn_mmm: pre Fit ridge regression with nevergrad's lambda complete", collapse = ", "))
             lambda_hp <- unlist(hypParamSamNG$lambda[i])
             if (hyper_fixed == FALSE) {
               lambda_scaled <- lambda_min + (lambda_max - lambda_min) * lambda_hp
@@ -694,6 +700,7 @@ robyn_mmm <- function(InputCollect,
               penalty.factor <- rep(1, ncol(x_train))
             }
 
+            message(paste("robyn_mmm: Fit ridge regression with nevergrad's lambda complete", collapse = ", "))
 
             glm_mod <- glmnet(
               x_train,
@@ -706,7 +713,7 @@ robyn_mmm <- function(InputCollect,
               type.measure = "mse",
               penalty.factor = penalty.factor
             ) # plot(glm_mod); coef(glm_mod)
-
+            message(paste("robyn_mmm: glm_mod init", collapse = ", "))
             # # When we used CV instead of nevergrad
             # lambda_range <- c(cvmod$lambda.min, cvmod$lambda.1se)
             # lambda <- lambda_range[1] + (lambda_range[2]-lambda_range[1]) * lambda_control
@@ -719,6 +726,7 @@ robyn_mmm <- function(InputCollect,
               lambda = lambda_scaled,
               lower.limits, upper.limits, intercept_sign
             )
+            message(paste("robyn_mmm: model refit using best lambda ", collapse = ", "))
             decompCollect <- model_decomp(
               coefs = mod_out$coefs,
               dt_modSaturated = dt_modSaturated,
@@ -728,6 +736,7 @@ robyn_mmm <- function(InputCollect,
               dt_modRollWind = dt_modRollWind,
               refreshAddedStart = refreshAddedStart
             )
+            message(paste("robyn_mmm: model_decomp ", collapse = ", "))
             nrmse <- mod_out$nrmse_train
             mape <- 0
             df.int <- mod_out$df.int
@@ -741,6 +750,7 @@ robyn_mmm <- function(InputCollect,
                 dayInterval = InputCollect$dayInterval
               )
               mape <- mean(liftCollect$mape_lift, na.rm = TRUE)
+              message(paste("robyn_mmm: alibration mape obtined ", collapse = ", "))
             }
 
             #####################################
@@ -869,6 +879,12 @@ robyn_mmm <- function(InputCollect,
             if (cores == 1) {
               for (i in 1:iterPar) doparFx(i)
             } else {
+              # Create cluster to minimize overhead for parallel back-end registering
+              if (check_parallel() & !hyper_fixed) {
+                registerDoParallel(cores)
+              } else {
+                registerDoSEQ()
+              }
               foreach(i = 1:iterPar) %dorng% doparFx(i)
             }
           )
