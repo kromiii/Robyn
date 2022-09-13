@@ -354,7 +354,7 @@ robyn_mmm <- function(InputCollect,
 
   #message(paste("robyn_mmm:  r-reticulate ",paste(reticulate::conda_list() collapse = ", ")))
   message(paste("robyn_mmm: python config : ", paste(reticulate::py_config() ,collapse = ", ")))
-  reticulate::use_python('/Users/sinandjevdet/opt/miniconda3/envs/env_rpyfin/bin/python3')
+  reticulate::use_python('/Users/sinandjevdet/opt/miniconda3/envs/env_robyn/bin/python3.8')
 
   #message(paste("robyn_mmm: using python version ", paste(reticulate::py_discover_config() collapse = ", ")))
   #reticulate::use_python("/Users/sinandjevdet/opt/miniconda3/envs/r-reticulate/bin/python")
