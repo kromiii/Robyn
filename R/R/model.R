@@ -498,6 +498,8 @@ robyn_mmm <- function(InputCollect,
   message(paste("robyn_mmm:Start Nevergrad optimizer", collapse = ", "))
   if (!hyper_fixed) {
     my_tuple <- tuple(hyper_count)
+    message(paste("my_tuple lenght",my_tuple, collapse = ", "))
+    stop("All factor variables must have more than 1 level")
     instrumentation <- ng$p$Array(shape = my_tuple, lower = 0, upper = 1)
     optimizer <- ng$optimizers$registry[optimizer_name](instrumentation, budget = iterTotal, num_workers = cores)
     message(paste("robyn_mmm: Nevergrad optimizer complete", collapse = ", "))
