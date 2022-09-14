@@ -35,11 +35,20 @@ for (i in 1:num_iterations) {
     }
     registerDoParallel(cores = num_workers)
     getDoParWorkers()
-    first <- foreach(i = 1:num_workers) %dorng% sd(nevergrad_hp_val[[j]])
-    second <- foreach(i = 1:num_workers) %dorng% mean(nevergrad_hp_val[[j]])
+    #first <- foreach(i = 1:num_workers) %dopar% sd(nevergrad_hp_val[[j]])
+    #second <- foreach(i = 1:num_workers) %dopar% mean(nevergrad_hp_val[[j]])
+    score <- foreach(i=1:num_workers) %dopar% mean(nevergrad_hp_val[[j]])
+    message(paste("Nevergrad first and second"))
     for (j in 1:num_workers) {
-      optimizer$tell(nevergrad_hp[[j]], tuple(first[[j]], second[[j]]))
+      message(paste("Nevergrad pre-optimiser num_workers"))
+      #optimizer$tell(nevergrad_hp[[j]], tuple(first[[j]], second[[j]]))
+      optimizer$tell(nevergrad_hp[[j]], score[[j]])
+      #message(paste("Nevergrad pre-optimiser num_workers",optimizer$tell(nevergrad_hp[[j]], tuple(first[[j]], second[[j]]))))
     }
+   message(paste("Nevergrad optimiser pre-value"))
+   hh <- optimizer$recommend()$value
+   message(paste("Nevergrad optimiser value", hh))
 }
-hh <- optimizer$recommend()$value
-message(paste("Nevergrad optimiser value", hh))
+
+hh
+#message(paste("Nevergrad optimiser value", hh))

@@ -12,7 +12,7 @@ logger.basicConfig(level=logger.DEBUG,
 
 try:
     r = robjects.r
-    ng_out= r.source('nevergrad_seqeuntial_bernardo.R')
+    ng_out= r.source('nevergrad_parrallel.R')
     print("SUCCESS")
 except:
     logger.exception("ERROR")
