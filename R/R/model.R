@@ -513,7 +513,7 @@ robyn_mmm <- function(InputCollect,
     score <- list(1,1)
     score_b <- list(1,1,1)
     if (is.null(calibration_input)) {
-      optimizer$tell(ng$p$MultiobjectiveReference(), score1[[1,1]] #score
+      optimizer$tell(ng$p$MultiobjectiveReference(), score) #score
       message(paste("robyn_mmm: Nevergrad tell optimizer 1 complete", collapse = ", "))
     } else {
       optimizer$tell(ng$p$MultiobjectiveReference(), tuple(1,1,1)) #score_b
@@ -965,13 +965,14 @@ robyn_mmm <- function(InputCollect,
       if (!hyper_fixed) {
         if (is.null(calibration_input)) {
           for (co in 1:iterPar) {
+            ng_tells <- list(nrmse.collect[co], decomp.rssd.collect[co])
             message(paste("robyn_mmm: Nevergrad tells objectives, optimizer 1 loop no",co, "of",iterPar, collapse = ", "))
-            optimizer$tell(nevergrad_hp[[co]], tuple(nrmse.collect[co], decomp.rssd.collect[co]))
+            optimizer$tell(nevergrad_hp[[co]], ng_tells)
             message(paste("robyn_mmm: Nevergrad tells objectives, Used optimizer 1", collapse = ", "))
           }
         } else {
           for (co in 1:iterPar) {
-            optimizer$tell(nevergrad_hp[[co]], tuple(nrmse.collect[co], decomp.rssd.collect[co], mape.lift.collect[co]))
+            optimizer$tell(nevergrad_hp[[co]], list(nrmse.collect[co], decomp.rssd.collect[co], mape.lift.collect[co]))
             message(paste("robyn_mmm: Nevergrad tells objectives, optimizer 2", collapse = ", "))
           }
         }
