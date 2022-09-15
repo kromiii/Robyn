@@ -281,7 +281,7 @@ robyn_train <- function(InputCollect, hyper_collect,
     }
 
     OutputModels <- list()
-
+    trials <-1
     for (ngt in 1:trials) { # ngt = 1
       if (!quiet) message(paste("  Running trial", ngt, "of", trials))
       model_output <- robyn_mmm(
@@ -296,7 +296,9 @@ robyn_train <- function(InputCollect, hyper_collect,
         seed = seed + ngt,
         quiet = quiet
       )
+      #message(paste(" GOT model output", model_output))
       check_coef0 <- any(model_output$resultCollect$decompSpendDist$decomp.rssd == Inf)
+      message(paste(" check_coef0", check_coef0))
       if (check_coef0) {
         num_coef0_mod <- filter(model_output$resultCollect$decompSpendDist, is.infinite(.data$decomp.rssd)) %>%
           distinct(.data$iterNG, .data$iterPar) %>%
@@ -313,10 +315,12 @@ robyn_train <- function(InputCollect, hyper_collect,
           ))
         }
       }
+      #message(paste(" GOT model output", model_output))
       model_output["trial"] <- ngt
       OutputModels[[ngt]] <- model_output
     }
   }
+  message(paste(" OutputModels obtained"))
   names(OutputModels) <- paste0("trial", 1:length(OutputModels))
   return(OutputModels)
 }
@@ -353,7 +357,7 @@ robyn_mmm <- function(InputCollect,
   message(paste("in robyn_mmms : ", collapse = ", "))
 
   #message(paste("robyn_mmm:  r-reticulate ",paste(reticulate::conda_list() collapse = ", ")))
-  message(paste("robyn_mmm: python config : ", paste(reticulate::py_config() ,collapse = ", ")))
+  #message(paste("robyn_mmm: python config : ", paste(reticulate::py_config() ,collapse = ", ")))
   reticulate::use_python('/Users/sinandjevdet/opt/miniconda3/envs/env_robyn/bin/python3.8')
 
   #message(paste("robyn_mmm: using python version ", paste(reticulate::py_discover_config() collapse = ", ")))
@@ -363,7 +367,7 @@ robyn_mmm <- function(InputCollect,
   if (reticulate::py_module_available("nevergrad")) {
     ng <- reticulate::import("nevergrad", delay_load = TRUE)
     message(paste("robyn_mmm: nevergrad imported ", collapse = ", "))
-    message(paste("robyn_mmm: reticulate version : ", paste(packageVersion("reticulate") ,collapse = ", ")))
+    #message(paste("robyn_mmm: reticulate version : ", paste(packageVersion("reticulate") ,collapse = ", ")))
 
     if (is.integer(seed)) {
       np <- reticulate::import("numpy", delay_load = FALSE)
@@ -497,19 +501,23 @@ robyn_mmm <- function(InputCollect,
   ## Start Nevergrad optimizer
   message(paste("robyn_mmm:Start Nevergrad optimizer", collapse = ", "))
   if (!hyper_fixed) {
-    my_tuple <- tuple(hyper_count)
+    #my_tuple <- tuple(hyper_count)
+    my_tuple <- list(hyper_count)
     message(paste("my_tuple lenght",my_tuple, collapse = ", "))
-    stop("All factor variables must have more than 1 level")
+    #stop("All factor variables must have more than 1 level")
     instrumentation <- ng$p$Array(shape = my_tuple, lower = 0, upper = 1)
     optimizer <- ng$optimizers$registry[optimizer_name](instrumentation, budget = iterTotal, num_workers = cores)
     message(paste("robyn_mmm: Nevergrad optimizer complete", collapse = ", "))
     # Set multi-objective dimensions for objective functions (errors)
+    score1 <- list()
+    score <- list(1,1)
+    score_b <- list(1,1,1)
     if (is.null(calibration_input)) {
-      optimizer$tell(ng$p$MultiobjectiveReference(), tuple(1, 1))
-      message(paste("robyn_mmm: Nevergrad optimizer complete", collapse = ", "))
+      optimizer$tell(ng$p$MultiobjectiveReference(), score1[[1,1]] #score
+      message(paste("robyn_mmm: Nevergrad tell optimizer 1 complete", collapse = ", "))
     } else {
-      optimizer$tell(ng$p$MultiobjectiveReference(), tuple(1, 1, 1))
-      message(paste("robyn_mmm: Nevergrad optimizer complete", collapse = ", "))
+      optimizer$tell(ng$p$MultiobjectiveReference(), tuple(1,1,1)) #score_b
+      message(paste("robyn_mmm: Nevergrad tell optimizer 2 complete", collapse = ", "))
     }
   }
 
@@ -530,11 +538,13 @@ robyn_mmm <- function(InputCollect,
   #}
 
   message(paste("robyn_mmm:prepared loop  ", collapse = ", "))
-
-  sysTimeDopar <- system.time({
-    message(paste("robyn_mmm: sysTimeDopar  ", collapse = ", "))
+  iterNG <- 3
+  sysTimeDopar <-  { #system.time({
+    message(paste("robyn_mmm: first in  sysTimeDopar  ", collapse = ", "))
     for (lng in 1:iterNG) { # lng = 1
+      message(paste("robyn_mmm: sysTimeDopar iterNG loop no",lng, "of",iterNG, collapse = ", "))
       nevergrad_hp <- list()
+
       nevergrad_hp_val <- list()
       hypParamSamList <- list()
       hypParamSamNG <- c()
@@ -542,11 +552,15 @@ robyn_mmm <- function(InputCollect,
       if (hyper_fixed == FALSE) {
         # Setting initial seeds
         for (co in 1:iterPar) { # co = 1
+
           ## Get hyperparameter sample with ask (random)
           nevergrad_hp[[co]] <- optimizer$ask()
+          message(paste("robyn_mmm: Get hyperparameter sample with ask  ", collapse = ", "))
           nevergrad_hp_val[[co]] <- nevergrad_hp[[co]]$value
+
           ## Scale sample to given bounds using uniform distribution
           for (hypNameLoop in hyper_bound_list_updated_name) {
+             message(paste("robyn_mmm: Scale sample to given bounds using uniform distribution  ", collapse = ", "))
             index <- which(hypNameLoop == hyper_bound_list_updated_name)
             channelBound <- unlist(hyper_bound_list_updated[hypNameLoop])
             hyppar_value <- nevergrad_hp_val[[co]][index]
@@ -564,9 +578,12 @@ robyn_mmm <- function(InputCollect,
         if (hyper_count_fixed != 0) {
           hypParamSamNG <- cbind(hypParamSamNG, dt_hyper_fixed_mod) %>%
             select(all_of(hypParamSamName))
+            message(paste("robyn_mmm: add fixed hyperparameters  ", collapse = ", "))
         }
       } else {
+
         hypParamSamNG <- select(dt_hyper_fixed_mod, all_of(hypParamSamName))
+        message(paste("robyn_mmm: add fixed hyperparameters post hypParamSamNG ", collapse = ", "))
       }
 
       ## Parallel start
@@ -575,8 +592,10 @@ robyn_mmm <- function(InputCollect,
       decomp.rssd.collect <- c()
       best_mape <- Inf
       message(paste("robyn_mmm: pre  doparFx  ", collapse = ", "))
+
       doparFx <- function(i, ...) {
             t1 <- Sys.time()
+            message(paste("robyn_mmm: in  doparFx  ", collapse = ", "))
             #### Get hyperparameter sample
             hypParamSam <- hypParamSamNG[i, ]
             #### Tranform media with hyperparameters
@@ -589,19 +608,25 @@ robyn_mmm <- function(InputCollect,
             for (v in 1:length(all_media)) {
               ################################################
               ## 1. Adstocking (whole data)
+              message(paste("robyn_mmm: in  doparFx Adstocking  ", collapse = ", "))
               m <- dt_modAdstocked[, all_media[v]][[1]]
               if (adstock == "geometric") {
+                message(paste("robyn_mmm: in  doparFx Adstocking geometric ", collapse = ", "))
                 theta <- hypParamSam[paste0(all_media[v], "_thetas")][[1]][[1]]
                 x_list <- adstock_geometric(x = m, theta = theta)
               } else if (adstock == "weibull_cdf") {
+                message(paste("robyn_mmm: in  doparFx Adstocking weibull_cdf ", collapse = ", "))
                 shape <- hypParamSam[paste0(all_media[v], "_shapes")][[1]][[1]]
                 scale <- hypParamSam[paste0(all_media[v], "_scales")][[1]][[1]]
                 x_list <- adstock_weibull(x = m, shape = shape, scale = scale, type = "cdf")
               } else if (adstock == "weibull_pdf") {
+                message(paste("robyn_mmm: in  doparFx Adstocking weibull_pdf ", collapse = ", "))
                 shape <- hypParamSam[paste0(all_media[v], "_shapes")][[1]][[1]]
                 scale <- hypParamSam[paste0(all_media[v], "_scales")][[1]][[1]]
                 x_list <- adstock_weibull(x = m, shape = shape, scale = scale, type = "pdf")
               }
+
+              #message(paste("robyn_mmm: in  doparFx selected Adstock  ", collapse = ", "))
               m_adstocked <- x_list$x_decayed
               mediaAdstocked[[v]] <- m_adstocked
               mediaVecCum[[v]] <- x_list$thetaVecCum
@@ -615,12 +640,19 @@ robyn_mmm <- function(InputCollect,
 
               ################################################
               ## 2. Saturation (only window data)
+              message(paste("robyn_mmm: in  doparFx Saturation ", collapse = ", "))
               m_adstockedRollWind <- m_adstocked[rollingWindowStartWhich:rollingWindowEndWhich]
+              #message(paste("robyn_mmm: in  doparFx Saturation m_adstockedRollWind ", collapse = ", "))
               alpha <- hypParamSam[paste0(all_media[v], "_alphas")][[1]][[1]]
+              message(paste("robyn_mmm: in  doparFx Saturation alpha ", collapse = ", "))
               gamma <- hypParamSam[paste0(all_media[v], "_gammas")][[1]][[1]]
+              #message(paste("robyn_mmm: in  doparFx Saturation gamma ", collapse = ", "))
               mediaSaturated[[v]] <- saturation_hill(m_adstockedRollWind, alpha = alpha, gamma = gamma)
-              # plot(m_adstockedRollWind, mediaSaturated[[1]])
+              #message(paste("robyn_mmm: in  doparFx Saturation mediaSaturated", collapse = ","))
+              #message(paste("robyn_mmm: in  doparFx mediaSaturated ", collapse = ", "))
+              #plot(m_adstockedRollWind, mediaSaturated[[1]])
             }
+            #message(paste("robyn_mmm: in  doparFx Adstocking loop complete ", collapse = ", "))
             names(mediaAdstocked) <- names(mediaVecCum) <- names(mediaSaturated) <- all_media
             dt_modAdstocked <- dt_modAdstocked %>%
               select(-all_of(all_media)) %>%
@@ -634,9 +666,11 @@ robyn_mmm <- function(InputCollect,
             #### Split and prepare data for modelling
 
             dt_train <- dt_modSaturated
+            message(paste("robyn_mmm: in  doparFx dt_train ", collapse = ", "))
 
             ## Contrast matrix because glmnet does not treat categorical variables (one hot encoding)
             y_train <- dt_train$dep_var
+            message(paste("robyn_mmm: in  doparFx y_train ", collapse = ", "))
             if (length(which(grepl("^[0-9]", dt_train))) > 1) {
               x_train <- model.matrix(dep_var ~ ., dt_train)[, -1]
             } else {
@@ -742,6 +776,7 @@ robyn_mmm <- function(InputCollect,
             nrmse <- mod_out$nrmse_train
             mape <- 0
             df.int <- mod_out$df.int
+            message(paste("robyn_mmm: model metrics set ",nrmse, collapse = ", "))
 
             #####################################
             #### get calibration mape
@@ -752,12 +787,12 @@ robyn_mmm <- function(InputCollect,
                 dayInterval = InputCollect$dayInterval
               )
               mape <- mean(liftCollect$mape_lift, na.rm = TRUE)
-              message(paste("robyn_mmm: alibration mape obtined ", collapse = ", "))
+              message(paste("robyn_mmm: calibration mape obtined ", collapse = ", "))
             }
 
             #####################################
             #### Calculate multi-objectives for pareto optimality
-
+            message(paste("robyn_mmm: Calculate multi-objectives for pareto optimality ", collapse = ", "))
             ## DECOMP objective: sum of squared distance between decomp share and spend share to be minimized
             dt_decompSpendDist <- decompCollect$xDecompAgg %>%
               filter(.data$rn %in% paid_media_spends) %>%
@@ -782,6 +817,8 @@ robyn_mmm <- function(InputCollect,
               select(dt_decompSpendDist, .data$rn, contains("_spend"), contains("_share")),
               by = "rn"
             )
+
+            message(paste("robyn_mmm: end DECOMP objective: sum of squared distance between decomp share", collapse = ", "))
 
             # Calculate DECOMP.RSSD error
             if (!refresh) {
@@ -809,6 +846,8 @@ robyn_mmm <- function(InputCollect,
               dt_decompSpendDist$effect_share <- 0
             }
 
+           message(paste("robyn_mmm:Finished Calculate DECOMP.RSSD error", collapse = ", "))
+
             ## adstock objective: sum of squared infinite sum of decay to be minimised - deprecated
             # dt_decaySum <- dt_mediaVecCum[,  .(rn = all_media, decaySum = sapply(.SD, sum)), .SDcols = all_media]
             # adstock.ssisd <- dt_decaySum[, sum(decaySum^2)]
@@ -833,98 +872,130 @@ robyn_mmm <- function(InputCollect,
               df.int = df.int
             )
 
+            message(paste("robyn_mmm: common", collapse = ", "))
+
             resultCollect[["resultHypParam"]] <- data.frame(hypParamSam) %>%
+            #message(paste("robyn_mmm: resultCollect[[resultHypParam]]", collapse = ", "))
               select(-.data$lambda) %>%
+              #message(paste("robyn_mmm: resultCollect[[resultHypParam]]", collapse = ", "))
               bind_cols(data.frame(t(common[1:8]))) %>%
-              mutate(
-                pos = prod(decompCollect$xDecompAgg$pos),
-                Elapsed = as.numeric(difftime(Sys.time(), t1, units = "secs")),
-                ElapsedAccum = as.numeric(difftime(Sys.time(), t0, units = "secs"))
-              ) %>%
+              #mutate(
+                #pos = prod(decompCollect$xDecompAgg$pos),
+                #Elapsed = as.numeric(difftime(Sys.time(), t1, units = "secs")), #t1
+                #ElapsedAccum = as.numeric(difftime(Sys.time(), t0, units = "secs")) #t0
+              #) %>%
               bind_cols(data.frame(t(common[9:11]))) %>%
-              dplyr::mutate_all(unlist)
+              #message(paste("robyn_mmm:pre common dplyr::mutate_all(unlist)", collapse = ", "))
+              #dplyr::mutate_all(unlist)
+              message(paste("robyn_mmm: common dplyr::mutate_all(unlist)", collapse = ", "))
 
             if (hyper_fixed) {
+                message(paste("robyn_mmm: in hyper_fixed", collapse = ", "))
               resultCollect[["xDecompVec"]] <- decompCollect$xDecompVec %>%
                 bind_cols(data.frame(t(common[1:8]))) %>%
                 mutate(intercept = decompCollect$xDecompAgg$xDecompAgg[
                   decompCollect$xDecompAgg$rn == "(Intercept)"
                 ]) %>%
                 bind_cols(data.frame(t(common[9:11])))
+                message(paste("robyn_mmm: hyper_fixed", collapse = ", "))
             }
+
+             message(paste("robyn_mmm: pre resultCollect[[xDecompAgg]]", collapse = ", "))
 
             resultCollect[["xDecompAgg"]] <- decompCollect$xDecompAgg %>%
               bind_cols(data.frame(t(common)))
+              message(paste("robyn_mmm: post resultCollect[[xDecompAgg]]", collapse = ", "))
 
             if (!is.null(calibration_input)) {
               resultCollect[["liftCalibration"]] <- liftCollect %>%
                 bind_cols(data.frame(t(common)))
+                message(paste("robyn_mmm: clibration input is not null", collapse = ", "))
             }
 
             resultCollect[["decompSpendDist"]] <- dt_decompSpendDist %>%
               bind_cols(data.frame(t(common)))
+              message(paste("robyn_mmm: decompSpendDist", collapse = ", "))
 
             resultCollect <- append(resultCollect, as.list(common))
+            message(paste("robyn_mmm: resultCollect", collapse = ", "))
 
 
           if (cnt == iterTotal) {
+              message(paste("robyn_mmm: cnt == iterTotal", collapse = ", "))
               print(" === ")
               print(paste0(
                 "Optimizer_name: ", optimizer_name, ";  Total_iterations: ",
                 cnt, ";   Best MAPE: ", min(best_mape, mape)
               ))
             }
+            message(paste("robyn_mmm: pre return resultCollect", collapse = ", "))
             return(resultCollect)
+            message(paste("robyn_mmm: returned resultCollect", collapse = ", "))
           }
 
         doparCollect <- suppressPackageStartupMessages(
+
             if (cores == 1) {
+               message(paste("robyn_mmm: sequential doparCollect pre doparFx", collapse = ", "))
               for (i in 1:iterPar) doparFx(i)
+              message(paste("robyn_mmm: finished sequential doparCollect pre doparFx", collapse = ", "))
             } else {
               # Create cluster to minimize overhead for parallel back-end registering
               if (check_parallel() & !hyper_fixed) {
                 registerDoParallel(cores)
+                message(paste("robyn_mmm: in doparCollect registerDoParallel ", collapse = ", "))
               } else {
                 registerDoSEQ()
+                message(paste("robyn_mmm: in doparCollect registerDoSEQ ", collapse = ", "))
               }
+              message(paste("robyn_mmm: parallel doparCollect pre doparFx", collapse = ", "))
               foreach(i = 1:iterPar) %dorng% doparFx(i)
             }
           )
 
+      message(paste("robyn_mmm: post doparCollect pre metrics", collapse = ", "))
       nrmse.collect <- sapply(doparCollect, function(x) x$nrmse)
       decomp.rssd.collect <- sapply(doparCollect, function(x) x$decomp.rssd)
       mape.lift.collect <- sapply(doparCollect, function(x) x$mape)
-
+      message(paste("robyn_mmm: post doparCollect post metrics", collapse = ", "))
       #####################################
       #### Nevergrad tells objectives
-
+      ng_tells <- list()
+      message(paste("robyn_mmm: Nevergrad tells objectives ", collapse = ", "))
       if (!hyper_fixed) {
         if (is.null(calibration_input)) {
           for (co in 1:iterPar) {
+            message(paste("robyn_mmm: Nevergrad tells objectives, optimizer 1 loop no",co, "of",iterPar, collapse = ", "))
             optimizer$tell(nevergrad_hp[[co]], tuple(nrmse.collect[co], decomp.rssd.collect[co]))
+            message(paste("robyn_mmm: Nevergrad tells objectives, Used optimizer 1", collapse = ", "))
           }
         } else {
           for (co in 1:iterPar) {
             optimizer$tell(nevergrad_hp[[co]], tuple(nrmse.collect[co], decomp.rssd.collect[co], mape.lift.collect[co]))
+            message(paste("robyn_mmm: Nevergrad tells objectives, optimizer 2", collapse = ", "))
           }
         }
       }
-
+      message(paste("robyn_mmm:  pre resultCollectNG[[lng]] <- doparCollect", collapse = ", "))
       resultCollectNG[[lng]] <- doparCollect
+      message(paste("robyn_mmm:  resultCollectNG[[lng]] <- doparCollect", collapse = ", "))
       if (!quiet) {
         cnt <- cnt + iterPar
-        if (!hyper_fixed) setTxtProgressBar(pb, cnt)
+        #if (!hyper_fixed) setTxtProgressBar(pb, cnt)
       }
     } ## end NG loop
-  }) # end system.time
+    message(paste("robyn_mmm: end NG loop", collapse = ", "))
+  } #) # end system.time
+  message(paste("robyn_mmm: end system.time", collapse = ", "))
 
   # stop cluster to avoid memory leaks
   stopImplicitCluster()
   registerDoSEQ()
   getDoParWorkers()
 
+
   if (!hyper_fixed) {
-    cat("\r", paste("\n  Finished in", round(sysTimeDopar[3] / 60, 2), "mins"))
+    cat("\r", paste("\n  Finished in XXX")) #, round(sysTimeDopar[3] / 60, 2), "mins")
     flush.console()
     close(pb)
   }
@@ -934,15 +1005,18 @@ robyn_mmm <- function(InputCollect,
 
   resultCollect <- list()
 
-  resultCollect[["resultHypParam"]] <- bind_rows(
-    lapply(resultCollectNG, function(x) {
-      bind_rows(lapply(x, function(y) y$resultHypParam))
-    })
-  ) %>%
-    arrange(.data$nrmse) %>%
-    as_tibble()
+  message(paste("robyn_mmm: Final result collect", collapse = ", "))
+  #resultCollect[["resultHypParam"]] <- bind_rows(
+    #lapply(resultCollectNG, function(x) {
+      #bind_rows(lapply(x, function(y) y$resultHypParam))
+    #})
+ # ) %>%
+    #arrange(.data$nrmse) %>%
+    #as_tibble()
+  message(paste("robyn_mmm: Final result collect bind rows", collapse = ", "))
 
   if (hyper_fixed) {
+    message(paste("robyn_mmm: Final in hyper_fixed ", collapse = ", "))
     resultCollect[["xDecompVec"]] <- bind_rows(
       lapply(resultCollectNG, function(x) {
         bind_rows(lapply(x, function(y) y$xDecompVec))
@@ -951,16 +1025,17 @@ robyn_mmm <- function(InputCollect,
       arrange(.data$nrmse, .data$ds) %>%
       as_tibble()
   }
-
+  message(paste("robyn_mmm: Final resultCollect xDecompAgg ", collapse = ", "))
   resultCollect[["xDecompAgg"]] <- bind_rows(
     lapply(resultCollectNG, function(x) {
       bind_rows(lapply(x, function(y) y$xDecompAgg))
     })
   ) %>%
-    arrange(.data$nrmse) %>%
-    as_tibble()
-
+    #arrange(.data$nrmse) %>%
+    #as_tibble()
+  message(paste("robyn_mmm: Final resultCollect finished xDecompAgg ", collapse = ", "))
   if (!is.null(calibration_input)) {
+    message(paste("robyn_mmm: Final in calibration_input is not null", collapse = ", "))
     resultCollect[["liftCalibration"]] <- bind_rows(
       lapply(resultCollectNG, function(x) {
         bind_rows(lapply(x, function(y) y$liftCalibration))
@@ -969,22 +1044,25 @@ robyn_mmm <- function(InputCollect,
       arrange(.data$mape, .data$liftMedia, .data$liftStart) %>%
       as_tibble()
   }
+  message(paste("robyn_mmm: Final  resultCollect decompSpendDist", collapse = ", "))
 
   resultCollect[["decompSpendDist"]] <- bind_rows(
     lapply(resultCollectNG, function(x) {
       bind_rows(lapply(x, function(y) y$decompSpendDist))
     })
   ) %>%
-    arrange(.data$nrmse) %>%
-    as_tibble()
+    #arrange(.data$nrmse) %>%
+    #as_tibble()
 
-  resultCollect$iter <- length(resultCollect$mape)
-  resultCollect$elapsed.min <- sysTimeDopar[3] / 60
+  message(paste("robyn_mmm: Final PRE resultCollect$iter: ",length(resultCollect$mape), collapse = ", "))
+  #resultCollect$iter <- length(resultCollect$mape)
+  message(paste("robyn_mmm: Final  resultCollect$iter", collapse = ", "))
+  #resultCollect$elapsed.min <- sysTimeDopar[3] / 60
 
   # Adjust accumulated time
-  resultCollect$resultHypParam <- resultCollect$resultHypParam %>%
-    mutate(ElapsedAccum = .data$ElapsedAccum - min(.data$ElapsedAccum) +
-      .data$Elapsed[which.min(.data$ElapsedAccum)])
+  #resultCollect$resultHypParam <- resultCollect$resultHypParam %>%
+    #mutate(ElapsedAccum = .data$ElapsedAccum - min(.data$ElapsedAccum) +
+      #.data$Elapsed[which.min(.data$ElapsedAccum)])
 
   return(list(
     resultCollect = resultCollect,
