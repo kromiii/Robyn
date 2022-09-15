@@ -38,11 +38,12 @@ for (i in 1:num_iterations) {
     #first <- foreach(i = 1:num_workers) %dopar% sd(nevergrad_hp_val[[j]])
     #second <- foreach(i = 1:num_workers) %dopar% mean(nevergrad_hp_val[[j]])
     score <- foreach(i=1:num_workers) %dorng% mean(nevergrad_hp_val[[j]])
+    #browser()
     message(paste("Nevergrad first and second"))
     for (j in 1:num_workers) {
       message(paste("Nevergrad pre-optimiser num_workers"))
       #optimizer$tell(nevergrad_hp[[j]], tuple(first[[j]], second[[j]]))
-      optimizer$tell(nevergrad_hp[[j]], score[[j]])
+      optimizer$tell(nevergrad_hp[[j]], list(score[[j]],0.045))
       #message(paste("Nevergrad pre-optimiser num_workers",optimizer$tell(nevergrad_hp[[j]], tuple(first[[j]], second[[j]]))))
     }
    message(paste("Nevergrad optimiser pre-value"))
@@ -50,5 +51,6 @@ for (i in 1:num_iterations) {
    message(paste("Nevergrad optimiser value", hh))
 }
 
+message(paste("SUUUUCCCESS"))
 hh
 #message(paste("Nevergrad optimiser value", hh))

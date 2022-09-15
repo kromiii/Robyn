@@ -101,9 +101,9 @@ robyn_run <- function(InputCollect,
   if (hyps_fixed) trials <- iterations <- 1
   check_run_inputs(cores, iterations, trials, intercept_sign, nevergrad_algo)
   message(paste("check_run_inputs complete", collapse = ", "))
-  check_iteration(InputCollect$calibration_input, iterations, trials, hyps_fixed, refresh)
+  #check_iteration(InputCollect$calibration_input, iterations, trials, hyps_fixed, refresh)
   message(paste("check_iteration complete", collapse = ", "))
-  init_msgs_run(InputCollect, refresh, lambda_control, quiet)
+  #init_msgs_run(InputCollect, refresh, lambda_control, quiet)
   message(paste("init_msgs_run complete", collapse = ", "))
 
   #####################################
@@ -127,7 +127,10 @@ robyn_run <- function(InputCollect,
   attr(OutputModels, "hyper_fixed") <- hyper_collect$all_fixed
   attr(OutputModels, "refresh") <- refresh
 
+  message(paste(" attr complete", collapse = ", "))
+
   if (TRUE) {
+    message(paste(" # Check OutputModels ", collapse = ", "))
     OutputModels$cores <- cores
     OutputModels$iterations <- iterations
     OutputModels$trials <- trials
@@ -136,20 +139,26 @@ robyn_run <- function(InputCollect,
     OutputModels$add_penalty_factor <- add_penalty_factor
     OutputModels$hyper_updated <- hyper_collect$hyper_list_all
   }
-
+  message(paste(" # Check OutputModels Complete ", collapse = ", "))
   if (!outputs) {
     output <- OutputModels
   } else if (!hyper_collect$all_fixed) {
+    message(paste("Pre  robyn_outputs 1 ", collapse = ", "))
     output <- robyn_outputs(InputCollect, OutputModels, ...)
   } else {
+    message(paste("Pre  robyn_outputs 2", collapse = ", "))
     output <- robyn_outputs(InputCollect, OutputModels, clusters = FALSE, ...)
   }
 
   # Check convergence
-  if (!hyper_collect$all_fixed) output[["convergence"]] <- robyn_converge(OutputModels, ...)
+  message(paste(" # PRE- Check convergence complete", collapse = ", "))
+  #browser()
+  #if (!hyper_collect$all_fixed) output[["convergence"]] <- robyn_converge(OutputModels, ...)
+  message(paste(" # Check convergence complete", collapse = ", "))
 
   # Save hyper-parameters list
   output[["hyper_updated"]] <- hyper_collect$hyper_list_all
+  message(paste(" # Save hyper-parameters list complete", collapse = ", "))
 
   # Report total timing
   attr(output, "runTime") <- round(difftime(Sys.time(), t0, units = "mins"), 2)
@@ -281,7 +290,7 @@ robyn_train <- function(InputCollect, hyper_collect,
     }
 
     OutputModels <- list()
-    trials <-1
+    #trials <-1
     for (ngt in 1:trials) { # ngt = 1
       if (!quiet) message(paste("  Running trial", ngt, "of", trials))
       model_output <- robyn_mmm(
@@ -291,6 +300,7 @@ robyn_train <- function(InputCollect, hyper_collect,
         cores = cores,
         nevergrad_algo = nevergrad_algo,
         intercept_sign = intercept_sign,
+        trial_p=ngt,
         add_penalty_factor = add_penalty_factor,
         refresh = refresh,
         seed = seed + ngt,
@@ -347,6 +357,7 @@ robyn_mmm <- function(InputCollect,
                       cores,
                       nevergrad_algo,
                       intercept_sign,
+                      trial_p,
                       add_penalty_factor = FALSE,
                       dt_hyper_fixed = NULL,
                       # lambda_fixed = NULL,
@@ -354,11 +365,11 @@ robyn_mmm <- function(InputCollect,
                       seed = 123L,
                       quiet = FALSE) {
 
-  message(paste("in robyn_mmms : ", collapse = ", "))
+  message(paste("in robyn_mmms TRIAL no : ",trial_p, collapse = ", "))
 
   #message(paste("robyn_mmm:  r-reticulate ",paste(reticulate::conda_list() collapse = ", ")))
   #message(paste("robyn_mmm: python config : ", paste(reticulate::py_config() ,collapse = ", ")))
-  reticulate::use_python('/Users/sinandjevdet/opt/miniconda3/envs/env_robyn/bin/python3.8')
+  #reticulate::use_python('/Users/sinandjevdet/opt/miniconda3/envs/env_robyn/bin/python3.8')
 
   #message(paste("robyn_mmm: using python version ", paste(reticulate::py_discover_config() collapse = ", ")))
   #reticulate::use_python("/Users/sinandjevdet/opt/miniconda3/envs/r-reticulate/bin/python")
@@ -402,7 +413,7 @@ robyn_mmm <- function(InputCollect,
 
   ################################################
   #### Setup environment
-   message(paste("robyn_mmm: set environment: current env list ", paste(reticulate:: py_config(), collapse = ", ")))
+   #message(paste("robyn_mmm: set environment: current env list ", paste(reticulate:: py_config(), collapse = ", ")))
 
   if (is.null(InputCollect$dt_mod)) {
     stop("Run InputCollect$dt_mod <- robyn_engineering() first to get the dt_mod")
@@ -491,10 +502,12 @@ robyn_mmm <- function(InputCollect,
   ## Set iterations
   # hyper_fixed <- hyper_count == 0
   if (hyper_fixed == FALSE) {
+    message(paste("robyn_mmm:hyper_fixed == FALSE ", collapse = ", "))
     iterTotal <- iterations
     iterPar <- cores
     iterNG <- ceiling(iterations / cores) # Sometimes the progress bar may not get to 100%
   } else {
+    message(paste("robyn_mmm:hyper_fixed != FALSE ", collapse = ", "))
     iterTotal <- iterPar <- iterNG <- 1
   }
 
@@ -538,7 +551,7 @@ robyn_mmm <- function(InputCollect,
   #}
 
   message(paste("robyn_mmm:prepared loop  ", collapse = ", "))
-  iterNG <- 3
+  #iterNG <- 3
   sysTimeDopar <-  { #system.time({
     message(paste("robyn_mmm: first in  sysTimeDopar  ", collapse = ", "))
     for (lng in 1:iterNG) { # lng = 1
@@ -552,7 +565,7 @@ robyn_mmm <- function(InputCollect,
       if (hyper_fixed == FALSE) {
         # Setting initial seeds
         for (co in 1:iterPar) { # co = 1
-
+            message(paste("robyn_mmm:SSUD  iterPar loop no",co, collapse = ", "))
           ## Get hyperparameter sample with ask (random)
           nevergrad_hp[[co]] <- optimizer$ask()
           message(paste("robyn_mmm: Get hyperparameter sample with ask  ", collapse = ", "))
@@ -560,18 +573,34 @@ robyn_mmm <- function(InputCollect,
 
           ## Scale sample to given bounds using uniform distribution
           for (hypNameLoop in hyper_bound_list_updated_name) {
-             message(paste("robyn_mmm: Scale sample to given bounds using uniform distribution  ", collapse = ", "))
+             message(paste("robyn_mmm:SSUD loop no",hypNameLoop, collapse = ", "))
             index <- which(hypNameLoop == hyper_bound_list_updated_name)
+            message(paste("robyn_mmm: SSUD index  ", collapse = ", "))
+
+
             channelBound <- unlist(hyper_bound_list_updated[hypNameLoop])
+            message(paste("robyn_mmm: SSUD channelBound  ", collapse = ", "))
+
             hyppar_value <- nevergrad_hp_val[[co]][index]
+            message(paste("robyn_mmm: SSUD hyppar_value  ", collapse = ", "))
+
+
+
             if (length(channelBound) > 1) {
               hypParamSamNG[hypNameLoop] <- qunif(hyppar_value, min(channelBound), max(channelBound))
+               message(paste("robyn_mmm: SSUD channelBound >1  ", collapse = ", "))
+
             } else {
               hypParamSamNG[hypNameLoop] <- hyppar_value
+              message(paste("robyn_mmm: SSUD channelBound <=1  ", collapse = ", "))
             }
           }
-          hypParamSamList[[co]] <- data.frame(t(hypParamSamNG))
+          message(paste("robyn_mmm: SSUD pre data.frame   ", collapse = ", "))
+          hypParamSamList[[co]] <- data.frame(t(hypParamSamNG)) #frame data.frame(t(hypParamSamNG))
+          message(paste("robyn_mmm: SSUD post data.frame   ", collapse = ", "))
+
         }
+        message(paste("robyn_mmm: pre hypParamSamNG  bind_rows  ", collapse = ", "))
         hypParamSamNG <- bind_rows(hypParamSamList)
         names(hypParamSamNG) <- hyper_bound_list_updated_name
         ## Add fixed hyperparameters

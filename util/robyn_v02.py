@@ -442,10 +442,10 @@ try:
     try:
 
         outputs = robyn.robyn_run(InputCollect=input_collects
-                                  , iterations=2000  # recommended for the dummy dataset
-                                  , trials=5  # recommended for the dummy dataset
+                                  , iterations=18  # recommended for the dummy dataset
+                                  , trials=1  # recommended for the dummy dataset
                                   , outputs=False
-                                  ,cores=1
+                                  ,cores=3
 
                                   )
         logger.info("SUCCESSFULLY OBTAINED OUTPUTS")
