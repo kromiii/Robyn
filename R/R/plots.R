@@ -257,7 +257,7 @@ robyn_onepagers <- function(InputCollect, OutputCollect, select_model = NULL, qu
   if (check_parallel_plot()) {
     if (!quiet) message(paste(">> Plotting", count_mod_out, "selected models on", OutputCollect$cores, "cores..."))
   } else {
-    if (!quiet) message(paste(">> Plotting", count_mod_out, "selected models on 1 core (MacOS fallback)..."))
+    if (!quiet) message(paste(">> Plotting", count_mod_out, "selected models on 1 core (MacOS & Windows fallback)..."))
   }
 
   if (!quiet && count_mod_out > 0) {
@@ -541,7 +541,10 @@ robyn_onepagers <- function(InputCollect, OutputCollect, select_model = NULL, qu
   }
   if (!quiet && count_mod_out > 0) close(pbplot)
   # Stop cluster to avoid memory leaks
-  if (check_parallel_plot()) stopImplicitCluster()
+  if (check_parallel_plot()) {
+    stopImplicitCluster()
+    registerDoSEQ()
+  }
   return(invisible(parallelResult[[1]]))
 }
 

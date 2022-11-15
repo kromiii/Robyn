@@ -700,7 +700,7 @@ check_hyper_fixed <- function(InputCollect, dt_hyper_fixed, add_penalty_factor) 
 # Enable parallelisation of main modelling loop for MacOS and Linux only
 check_parallel <- function() "unix" %in% .Platform$OS.type
 # ggplot doesn't work with process forking on MacOS; however it works fine on Linux and Windows
-check_parallel_plot <- function() !"Darwin" %in% Sys.info()["sysname"]
+check_parallel_plot <- function() !any(c("Darwin",  "Windows") %in% Sys.info()["sysname"])
 
 check_init_msg <- function(InputCollect, cores) {
   opt <- sum(lapply(InputCollect$hyper_updated, length) == 2)
